@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleanroom.AI - AI Data Cleaning</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .space-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        }
+
+        #stars-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #workPage {
+            background: #000000;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(79, 209, 197, 0.2);
+            z-index: 1000;
+        }
+
+        .nav-logo {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 28px;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            color: #4FD1C5;
+        }
+
+        .nav-button {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .page {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .cloud-logo {
+            font-size: 100px;
+            margin-bottom: 30px;
+            animation: cloudFloat 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(79, 209, 197, 0.5));
+        }
+
+        @keyframes cloudFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .logo-text {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 80px;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tagline {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 50px;
+        }
+
+        .work-container {
+            padding: 120px 50px 50px 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .work-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .work-title {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 36px;
+            color: #4FD1C5;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            border: 3px dashed rgba(79, 209, 197, 0.5);
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(79, 209, 197, 0.05);
+        }
+
+        .upload-zone:hover {
+            border-color: #4FD1C5;
+            background: rgba(79, 209, 197, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .excel-preview-container {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .excel-preview-container.active {
+            display: block;
+        }
+
+        .excel-toolbar {
+            background: rgba(79, 209, 197, 0.1);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .excel-content-wrapper {
+            background: white;
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            height: 400px;
+            overflow: auto;
+        }
+
+        .excel-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-family: 'Calibri', 'Arial', sans-serif;
+            font-size: 13px;
+            color: #000;
+            background: white;
+        }
+
+        .excel-table th,
+        .excel-table td {
+            border: 1px solid #d0d0d0;
+            padding: 8px 12px;
+            text-align: left;
+            min-width: 100px;
+        }
+
+        .excel-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #666;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .chat-container-compact {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            max-height: 400px;
+        }
+
+        .chat-messages-compact {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 250px;
+            max-height: 300px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            color: white;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #4FD1C5;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+
+        .chat-input-area-compact {
+            padding: 15px;
+            border-top: 1px solid rgba(79, 209, 197, 0.3);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+            font-size: 14px;
+            resize: none;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .chat-send-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .download-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            border: 1px solid rgba(79, 209, 197, 0.3);
+            text-align: center;
+        }
+
+        .download-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4FD1C5 0%, #06B6D4 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .download-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="space-background">
+        <canvas id="stars-canvas"></canvas>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-logo">☁️ Cleanroom.AI</div>
+        <div class="nav-links">
+            <a class="nav-link" onclick="showPage('home')">Home</a>
+            <a class="nav-link" onclick="clearAPIKey()">🔑 Change API Key</a>
+            <button class="nav-button" onclick="showPage('work')">Get Started</button>
+        </div>
+    </nav>
+
+    <div id="homePage" class="page active">
+        <div class="hero-section">
+            <div class="cloud-logo">☁️</div>
+            <h1 class="logo-text">CLEANROOM.AI</h1>
+            <p class="tagline">AI-Powered Data Cleaning Made Simple</p>
+            <button class="nav-button" onclick="showPage('work')" style="padding: 15px 40px; font-size: 18px;">
+                Start Cleaning Data →
+            </button>
+        </div>
+    </div>
+
+    <div id="workPage" class="page">
+        <div class="work-container">
+            <button class="back-button" onclick="showPage('home')">← Back to Home</button>
+
+            <div class="work-section">
+                <h2 class="work-title">📊 Your Spreadsheet</h2>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📊</div>
+                    <div style="font-size: 20px; color: white; margin-bottom: 10px;">Drop your Excel or CSV file here</div>
+                    <div style="font-size: 14px; color: rgba(255,255,255,0.6);">Supports: CSV, XLSX, XLS files</div>
+                    <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+                </div>
+
+                <div class="excel-preview-container" id="excelPreview">
+                    <div class="excel-toolbar">
+                        <span id="excelFilename" style="color: #4FD1C5; font-weight: 600;">📄 No file loaded</span>
+                        <span id="excelStats" style="color: rgba(255,255,255,0.6); font-size: 13px;"></span>
+                    </div>
+                    <div class="excel-content-wrapper">
+                        <table class="excel-table" id="excelTable"></table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="work-section">
+                <h2 class="work-title">💬 AI Assistant</h2>
+                <div class="chat-container-compact">
+                    <div class="chat-messages-compact" id="chatMessages">
+                        <div class="message ai">
+                            <div>👋 Upload a spreadsheet and tell me what you want to do with it!</div>
+                            <div class="message-time">Just now</div>
+                        </div>
+                    </div>
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area-compact">
+                        <div class="chat-input-wrapper">
+                            <textarea id="chatInput" class="chat-input" placeholder="Tell me what to do... (e.g., 'Remove dollar signs')" rows="1"></textarea>
+                            <button class="chat-send-btn" onclick="sendMessage()">➤ Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="download-section">
+                    <button class="download-btn" onclick="downloadCleaned()" disabled id="downloadBtn">
+                        📥 Download Cleaned File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // USER PROVIDES THEIR OWN API KEY
+        // ============================================
+        let CLAUDE_API_KEY = localStorage.getItem('claude_api_key') || '';
+        
+        const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+
+        // Show API key dialog if not set
+        function checkAndGetAPIKey() {
+            if (!CLAUDE_API_KEY) {
+                const key = prompt('Please enter your Claude API key:\n\nGet one free at: console.anthropic.com/settings/keys\n\nYour key will be stored locally in your browser.');
+                if (key && key.startsWith('sk-ant-')) {
+                    CLAUDE_API_KEY = key;
+                    localStorage.setItem('claude_api_key', key);
+                    return true;
+                }
+                return false;
+            }
+            return true;
+        }
+
+        // Clear API key function
+        function clearAPIKey() {
+            localStorage.removeItem('claude_api_key');
+            CLAUDE_API_KEY = '';
+            alert('API key cleared! Refresh the page to enter a new one.');
+        }
+
+        // Stars animation
+        const canvas = document.getElementById('stars-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const stars = [];
+        for (let i = 0; i < 200; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1.5,
+                opacity: Math.random() * 0.5 + 0.3,
+                twinkleSpeed: Math.random() * 0.02 + 0.01
+            });
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                star.opacity += star.twinkleSpeed;
+                if (star.opacity > 1 || star.opacity < 0.3) {
+                    star.twinkleSpeed = -star.twinkleSpeed;
+                }
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        let workbookData = null;
+        let cleanedData = null;
+
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageName + 'Page').classList.add('active');
+        }
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#4FD1C5';
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = '';
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '';
+            if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+        });
+
+        function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+
+                    workbookData = { filename: file.name, data: jsonData };
+                    displayExcelPreview();
+                    uploadZone.style.display = 'none';
+                    document.getElementById('excelPreview').classList.add('active');
+                    addAIMessage(`📊 Loaded "${file.name}" with ${jsonData.length - 1} rows. What would you like me to do?`);
+                } catch (error) {
+                    alert('Error reading file: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayExcelPreview() {
+            const data = workbookData.data;
+            document.getElementById('excelFilename').textContent = `📄 ${workbookData.filename}`;
+            document.getElementById('excelStats').textContent = `${data.length - 1} rows × ${data[0].length} columns`;
+
+            const table = document.getElementById('excelTable');
+            table.innerHTML = '';
+
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const letterRow = document.createElement('tr');
+            letterRow.innerHTML = '<th></th>';
+            data[0].forEach((_, i) => {
+                letterRow.innerHTML += `<th style="text-align: center; background: #e8e8e8;">${letters[i]}</th>`;
+            });
+            table.appendChild(letterRow);
+
+            data.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<th style="text-align: center; background: #f5f5f5;">${rowIndex + 1}</th>`;
+                row.forEach(cell => {
+                    tr.innerHTML += `<td>${cell || ''}</td>`;
+                });
+                table.appendChild(tr);
+            });
+        }
+
+        function addAIMessage(text) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai';
+            messageDiv.innerHTML = `
+                <div>${text}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
+                <div>${text}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+            if (!workbookData) {
+                addAIMessage("⚠️ Please upload a spreadsheet first!");
+                return;
+            }
+
+            if (!checkAndGetAPIKey()) {
+                addAIMessage("❌ You need a Claude API key to use this feature!<br><br>Get one free at: <a href='https://console.anthropic.com/settings/keys' target='_blank' style='color: #4FD1C5;'>console.anthropic.com/settings/keys</a>");
+                return;
+            }
+
+            addUserMessage(message);
+            input.value = '';
+            document.getElementById('typingIndicator').classList.add('active');
+
+            try {
+                const headers = workbookData.data[0];
+                const rowCount = workbookData.data.length - 1;
+                const dataPreview = workbookData.data.slice(0, 6).map(row => row.join(' | ')).join('\n');
+
+                const prompt = `You are a data processing expert. I have a spreadsheet with ${rowCount} rows and ${headers.length} columns.
+
+HEADERS: ${headers.join(', ')}
+
+SAMPLE DATA (first 5 rows):
+${dataPreview}
+
+USER INSTRUCTION: ${message}
+
+YOUR TASK:
+Generate JavaScript code that transforms the data array called 'processedData'.
+Return ONLY the JavaScript code, no explanations or markdown.
+
+RULES:
+- Row 0 is headers (don't modify unless asked)
+- Use forEach, map, filter, etc.
+- Handle empty cells
+- End with: // SUMMARY: [what you did]
+
+EXAMPLE:
+processedData.forEach((row, idx) => {
+  if (idx > 0 && row[1]) {
+    row[1] = row[1].replace(/\\$/g, '');
+  }
+});
+// SUMMARY: Removed dollar signs from column B for ${rowCount} rows
+
+Now generate code for the user's instruction.`;
+
+                // Call Claude API directly with the special browser header!
+                const response = await fetch(CLAUDE_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': CLAUDE_API_KEY,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20240620',
+                        max_tokens: 4096,
+                        messages: [{ role: 'user', content: prompt }]
+                    })
+                });
+
+                document.getElementById('typingIndicator').classList.remove('active');
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || `API error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                let generatedCode = result.content[0].text.trim();
+                generatedCode = generatedCode.replace(/```javascript\n?/g, '').replace(/```\n?/g, '');
+
+                let summary = 'Task completed';
+                for (let line of generatedCode.split('\n')) {
+                    if (line.includes('// SUMMARY:')) {
+                        summary = line.split('// SUMMARY:')[1].trim();
+                        break;
+                    }
+                }
+
+                let processedData = JSON.parse(JSON.stringify(workbookData.data));
+                eval(generatedCode);
+                cleanedData = processedData;
+                document.getElementById('downloadBtn').disabled = false;
+                addAIMessage(`✅ ${summary}`);
+
+            } catch (error) {
+                document.getElementById('typingIndicator').classList.remove('active');
+                addAIMessage(`❌ Error: ${error.message}<br><br>Check your API key and make sure you have credits at console.anthropic.com`);
+            }
+        }
+
+        function downloadCleaned() {
+            if (!cleanedData) return;
+            const csvContent = cleanedData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cleaned_${workbookData.filename.replace(/\.\w+$/, '')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
